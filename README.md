@@ -27,7 +27,7 @@ vendor, date, amount and IRS Schedule C category, and export a tax-ready report.
 ### 2. GitHub
 1. **Settings → Secrets and variables → Actions → Variables** tab, add:
    - `VITE_SUPABASE_URL` = Project URL
-   - `VITE_SUPABASE_ANON_KEY` = anon public key
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` = publishable key (`sb_publishable_…`; older projects: `VITE_SUPABASE_ANON_KEY` = anon key)
    (The anon key is meant to be public; row-level security protects the data. Never put the
    `service_role` key or an AI API key here.)
 2. **Settings → Pages → Source: GitHub Actions**.
