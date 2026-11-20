@@ -142,6 +142,9 @@ export function ReceiptDetail() {
       {receipt.status === "failed" && (
         <p className="alert">{receipt.ai_raw?.error ?? "We couldn't read this one."} Fill it in by hand or try again.</p>
       )}
+      {receipt.status === "processing" && !flow.fresh && Date.now() - new Date(receipt.created_at).getTime() > 60_000 && (
+        <p className="hint">This receipt was uploaded but never finished scanning. Tap <b>Scan again</b> below, or fill it in by hand.</p>
+      )}
       {flow.fresh && receipt.status !== "failed" && (
         <p className="success">
           ✨ Scanned!{flow.total && flow.total > 1 ? ` Receipt ${position} of ${flow.total}.` : ""} Check the details, pick a category, then tap <b>Save</b>.

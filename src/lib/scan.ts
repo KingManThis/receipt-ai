@@ -1,6 +1,8 @@
 // Free, on-device receipt reading: pdf.js for PDFs with real text, Tesseract.js OCR for photos.
 // Both libraries load only when first used, so the rest of the app stays fast.
 
+import { importFresh } from "./appVersion";
+
 export type ScanResult = { text: string; confidence: number; engine: "pdf-text" | "tesseract" };
 
 type Progress = (stage: string) => void;
@@ -41,7 +43,7 @@ let workerPromise: Promise<import("tesseract.js").Worker> | null = null;
 
 function getWorker() {
   const base = import.meta.env.BASE_URL + "tesseract";
-  workerPromise ??= import("tesseract.js").then(({ createWorker }) =>
+  workerPromise ??= importFresh(() => import("tesseract.js")).then(({ createWorker }) =>
     createWorker("eng", 1, {
       workerPath: `${base}/worker.min.js`,
       corePath: `${base}/core`,
@@ -61,8 +63,8 @@ async function ocr(source: Blob | HTMLCanvasElement, progress?: Progress): Promi
 
 async function scanPdf(file: Blob, progress?: Progress): Promise<ScanResult> {
   progress?.("Reading PDF…");
-  const pdfjs = await import("pdfjs-dist");
-  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+  const pdfjs = await importFresh(() => import("pdfjs-dist"));
+  const workerUrl = (await importFresh(() => import("pdfjs-dist/build/pdf.worker.min.mjs?url"))).default;
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
   const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
   const page = await doc.getPage(1);

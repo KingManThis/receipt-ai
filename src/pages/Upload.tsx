@@ -1,7 +1,8 @@
-import { useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../components/AuthProvider";
 import { ACCEPTED_TYPES, uploadAndExtract } from "../lib/receipts";
+import { importFresh } from "../lib/appVersion";
 
 type Item = { key: string; name: string; state: "working" | "done" | "error"; message?: string; receiptId?: string };
 
@@ -12,6 +13,10 @@ export function Upload() {
   const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
+
+  // Load the scanner now: faster first scan, and an outdated copy of the app refreshes itself
+  // here, before anything is uploaded, instead of failing halfway through.
+  useEffect(() => { importFresh(() => import("../lib/scan")).catch(() => {}); }, []);
 
   function update(key: string, patch: Partial<Item>) {
     setItems((list) => list.map((it) => (it.key === key ? { ...it, ...patch } : it)));

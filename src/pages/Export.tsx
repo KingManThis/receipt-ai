@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { importFresh } from "../lib/appVersion";
 import { formatMoney } from "../lib/receipts";
 import {
   receiptFileName, receiptsCsv, summarize, summaryCsv, type ExportReceipt,
@@ -68,7 +69,7 @@ export function Export() {
 
   async function downloadZip() {
     setError(null);
-    const { zipSync, strToU8 } = await import("fflate");
+    const { zipSync, strToU8 } = await importFresh(() => import("fflate"));
     const used = new Set<string>();
     const names = new Map<string, string>();
     const files: Record<string, Uint8Array> = {};

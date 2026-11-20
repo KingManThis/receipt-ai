@@ -2,7 +2,7 @@
 // - Page loads: network first, fall back to the cached page when offline.
 // - Built files, icons and the OCR engine: cache first (built file names change when their content does).
 // - Supabase (data, logins, images) is never cached: it's on another origin and always goes to the network.
-const CACHE = "receiptpilot-v2";
+const CACHE = "receiptpilot-v3";
 
 self.addEventListener("install", () => self.skipWaiting());
 
@@ -24,7 +24,8 @@ self.addEventListener("fetch", (event) => {
     const key = url.pathname.endsWith("/index.html") ? appShell : url.origin + url.pathname;
     event.respondWith((async () => {
       try {
-        const res = await fetch(req);
+        // Revalidate with the server every time so a new deploy is picked up immediately.
+        const res = await fetch(req, { cache: "no-cache" });
         if (res.ok) (await caches.open(CACHE)).put(key, res.clone());
         return res;
       } catch {

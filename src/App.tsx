@@ -2,6 +2,7 @@ import { HashRouter, Route, Routes, Navigate } from "react-router-dom";
 import { AuthProvider } from "./components/AuthProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Header } from "./components/Header";
+import { UpdateBanner } from "./components/UpdateBanner";
 import { Landing } from "./pages/Landing";
 import { Login } from "./pages/Login";
 import { ResetPassword } from "./pages/ResetPassword";
@@ -18,6 +19,7 @@ export default function App() {
     <AuthProvider>
       <HashRouter>
         <Header />
+        <UpdateBanner />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />

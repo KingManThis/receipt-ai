@@ -224,3 +224,9 @@ select, textarea {
 .hero-actions.left { justify-content: flex-start; margin-top: .75rem; }
 .saved-items { list-style: none; padding: 0; margin: .5rem 0; display: grid; gap: .35rem; }
 .saved-items li { display: flex; justify-content: space-between; gap: .75rem; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding-bottom: .35rem; }
+
+/* The global input { display: block } rule must not un-hide hidden elements (file inputs). */
+[hidden] { display: none !important; }
+.update-banner { display: flex; gap: .75rem; align-items: center; justify-content: center; flex-wrap: wrap;
+  background: var(--brand); color: var(--brand-text); padding: .6rem 1rem; font-weight: 600; }
+.update-banner .btn { background: var(--brand-text); color: var(--brand); border-color: var(--brand-text); }

@@ -2,6 +2,7 @@ import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import { RECEIPT_READER } from "../config";
 import { parseReceipt } from "./parseReceipt";
+import { importFresh } from "./appVersion";
 
 export type Category = { id: string; name: string; schedule_c_line: string | null; deductible_percent: number };
 
@@ -27,7 +28,7 @@ export type Receipt = {
 };
 
 export const STATUS_LABEL: Record<ReceiptStatus, string> = {
-  processing: "Reading…",
+  processing: "Not scanned",
   needs_review: "Needs review",
   confirmed: "Confirmed",
   failed: "Couldn't read",
@@ -122,7 +123,7 @@ export async function uploadAndExtract(
 
 /** Free reader: scan on this device, parse with rules, save for review. */
 async function scanAndSave(receiptId: string, blob: Blob, progress?: (stage: string) => void): Promise<void> {
-  const { scanReceipt } = await import("./scan");
+  const { scanReceipt } = await importFresh(() => import("./scan"));
   let result;
   try {
     result = await scanReceipt(blob, progress);

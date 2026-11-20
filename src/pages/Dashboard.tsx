@@ -41,7 +41,7 @@ export function Dashboard() {
       const thisYear = rows.filter((x) => x.receipt_date && x.receipt_date >= year);
       setStats({
         count: rows.length,
-        needsReview: rows.filter((x) => x.status === "needs_review" || x.status === "failed").length,
+        needsReview: rows.filter((x) => x.status !== "confirmed").length,
         yearTotal: thisYear.reduce((s, x) => s + (x.total ?? 0), 0),
         yearDeductible: thisYear.reduce((s, x) => s + deductibleOf(x.total, x.categories?.deductible_percent), 0),
         monthTotal: rows.filter((x) => x.receipt_date && x.receipt_date >= month).reduce((s, x) => s + (x.total ?? 0), 0),
