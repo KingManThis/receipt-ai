@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import {
-  deleteReceipt, fetchCategories, reread, signedUrl, STATUS_LABEL, type Category, type Receipt,
+  deleteReceipt, deductibleOf, fetchCategories, formatMoney, reread, signedUrl, STATUS_LABEL, type Category, type Receipt,
 } from "../lib/receipts";
 
 type Form = {
@@ -22,11 +22,20 @@ const toForm = (r: Receipt): Form => ({
   notes: r.notes ?? "",
 });
 
+export type SavedItem = {
+  vendor: string; total: number | null; currency: string; category: string | null; percent: number | null; deductible: number;
+};
+
 const num = (v: string) => (v.trim() === "" ? null : Number(v));
 
 export function ReceiptDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const flow = (useLocation().state ?? {}) as {
+    fresh?: boolean; queue?: string[]; total?: number; savedItems?: SavedItem[];
+  };
+  const queue = flow.queue ?? [];
+  const position = flow.total ? flow.total - queue.length : 0;
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [form, setForm] = useState<Form | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -40,10 +49,11 @@ export function ReceiptDetail() {
     const r = data as Receipt;
     setReceipt(r);
     setForm(toForm(r));
-    if (r.image_path && !imageUrl) setImageUrl(await signedUrl(r.image_path));
+    if (r.image_path) setImageUrl(await signedUrl(r.image_path));
   }
 
   useEffect(() => {
+    setImageUrl(null);
     load();
     fetchCategories().then(setCategories).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -59,6 +69,9 @@ export function ReceiptDetail() {
     className: uncertain.has(key === "category_id" ? "category" : key) ? "uncertain" : undefined,
   });
   const isPdf = receipt.image_path?.endsWith(".pdf");
+  const category = categories.find((c) => c.id === form.category_id);
+  const total = num(form.total);
+  const deductible = deductibleOf(total, category?.deductible_percent);
   const amountsDontAddUp = num(form.subtotal) != null && num(form.total) != null &&
     Math.abs((num(form.subtotal) ?? 0) + (num(form.tax) ?? 0) - (num(form.total) ?? 0)) > 0.02 &&
     !(receipt.notes ?? "").includes("Tip");
@@ -80,8 +93,24 @@ export function ReceiptDetail() {
       status: "confirmed",
     }).eq("id", receipt!.id);
     setBusy("");
-    if (error) setError(error.message);
-    else navigate("/app/receipts?status=needs_review");
+    if (error) { setError(error.message); return; }
+
+    const saved = {
+      vendor: form!.vendor.trim() || "Receipt",
+      total,
+      currency: form!.currency.trim().toUpperCase() || "USD",
+      category: category?.name ?? null,
+      percent: category?.deductible_percent ?? null,
+      deductible,
+    };
+    const savedItems = [...(flow.savedItems ?? []), saved];
+    if (queue.length) {
+      // More receipts from the same upload: check the next one.
+      navigate(`/app/receipts/${queue[0]}`, { state: { fresh: true, queue: queue.slice(1), total: flow.total, savedItems } });
+    } else {
+      // All done: back home with a summary of what was just added.
+      navigate("/app", { state: { savedItems } });
+    }
   }
 
   async function retry() {
@@ -113,6 +142,11 @@ export function ReceiptDetail() {
       {receipt.status === "failed" && (
         <p className="alert">{receipt.ai_raw?.error ?? "We couldn't read this one."} Fill it in by hand or try again.</p>
       )}
+      {flow.fresh && receipt.status !== "failed" && (
+        <p className="success">
+          ✨ Scanned!{flow.total && flow.total > 1 ? ` Receipt ${position} of ${flow.total}.` : ""} Check the details, pick a category, then tap <b>Save</b>.
+        </p>
+      )}
       {uncertain.size > 0 && <p className="hint">Highlighted fields were hard to read or missing. Please check them.</p>}
 
       <div className="detail">
@@ -143,6 +177,21 @@ export function ReceiptDetail() {
               ))}
             </select>
           </label>
+          <div className="calc" aria-live="polite">
+            {total == null ? (
+              <span className="muted">Enter the total to see what you can deduct.</span>
+            ) : !category ? (
+              <span className="muted">Pick a category to see how much of {formatMoney(total, form.currency)} is tax-deductible.</span>
+            ) : category.deductible_percent === 0 ? (
+              <span><b>Not deductible</b> <span className="muted">(personal expense)</span></span>
+            ) : (
+              <span>
+                Tax-deductible: <b>{formatMoney(deductible, form.currency)}</b>
+                {category.deductible_percent < 100 && <span className="muted"> ({category.deductible_percent}% of {formatMoney(total, form.currency)})</span>}
+                {category.schedule_c_line && <span className="muted"> · Schedule C {category.schedule_c_line}</span>}
+              </span>
+            )}
+          </div>
           <div className="two">
             <label>Payment method<input {...field("payment_method")} /></label>
             <label>Currency<input maxLength={3} {...field("currency")} /></label>
@@ -156,7 +205,7 @@ export function ReceiptDetail() {
           )}
 
           {error && <p className="alert">{error}</p>}
-          <button className="btn full" disabled={!!busy}>{busy === "save" ? "Saving…" : "Save & confirm"}</button>
+          <button className="btn full" disabled={!!busy}>{busy === "save" ? "Saving…" : queue.length ? `Save & next (${queue.length} left)` : "Save"}</button>
           <div className="row-actions">
             <button type="button" className="link" onClick={retry} disabled={!!busy}>
               {busy === "retry" ? "Scanning…" : "Scan again"}

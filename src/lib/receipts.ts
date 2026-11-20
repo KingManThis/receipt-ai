@@ -52,6 +52,12 @@ export function fetchCategories(): Promise<Category[]> {
   return categoriesCache;
 }
 
+/** Deductible part of an amount for a category's percentage (e.g. meals 50%). */
+export function deductibleOf(total: number | null, percent: number | null | undefined): number {
+  if (total == null || percent == null) return 0;
+  return Math.round(total * percent) / 100;
+}
+
 export function formatMoney(amount: number | null, currency = "USD"): string {
   if (amount == null) return "—";
   try {

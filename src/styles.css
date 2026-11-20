@@ -210,3 +210,17 @@ select, textarea {
 .plan.featured { border: 2px solid var(--brand); }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
 .btn { text-align: center; }
+
+/* Upload → review → saved flow */
+.scanning { display: flex; gap: .9rem; align-items: center; margin: 1rem 0; }
+.spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--border); border-top-color: var(--brand); animation: spin .8s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.5s; } }
+.dropzone[hidden] { display: none; }
+.calc { background: var(--bg); border: 1px dashed var(--border); border-radius: 8px; padding: .6rem .75rem; margin: -.25rem 0 .9rem; font-size: .95rem; }
+.saved-summary { border: 2px solid var(--ok); margin-bottom: 1rem; }
+.saved-summary p { margin: .4rem 0; }
+.saved-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-size: 1.05rem; }
+.hero-actions.left { justify-content: flex-start; margin-top: .75rem; }
+.saved-items { list-style: none; padding: 0; margin: .5rem 0; display: grid; gap: .35rem; }
+.saved-items li { display: flex; justify-content: space-between; gap: .75rem; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding-bottom: .35rem; }
