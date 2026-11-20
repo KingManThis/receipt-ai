@@ -225,6 +225,11 @@ export function Settings() {
         </button>
       </section>
 
+      <p className="muted small-text center">
+        <a href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy Policy</a> ·{" "}
+        <a href={`${import.meta.env.BASE_URL}terms.html`}>Terms of Service</a>
+      </p>
+
       <section className="card danger-zone">
         <h2>Delete account</h2>
         <p className="muted small-text">

@@ -96,6 +96,12 @@ export function Login() {
                 value={password} onChange={(e) => setPassword(e.target.value)} />
             </label>
           )}
+          {mode === "signup" && (
+            <p className="muted small-text">
+              By signing up you agree to the <a href={`${import.meta.env.BASE_URL}terms.html`}>Terms</a> and{" "}
+              <a href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy Policy</a>.
+            </p>
+          )}
           {error && <p className="alert">{error}</p>}
           {notice && <p className="success">{notice}</p>}
           <button className="btn full" disabled={busy}>
