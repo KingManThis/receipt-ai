@@ -10,7 +10,7 @@ vendor, date, amount and IRS Schedule C category, and export a tax-ready report.
 
 - [x] Phase 1: landing page, sign-up/log-in (email + Google), password reset, database schema with row-level security, auto-deploy
 - [x] Phase 2: receipt upload (camera + files), AI extraction, review screen, receipt list with filters
-- [ ] Phase 3: dashboard charts, CSV / tax summary / ZIP exports
+- [x] Phase 3: Export page with receipts CSV, Schedule C tax summary (CSV + print/PDF), ZIP of images + CSVs
 - [ ] Phase 4: mobile camera, installable app, accuracy testing
 - [ ] Phase 5: Stripe plans, usage limits, privacy & terms
 

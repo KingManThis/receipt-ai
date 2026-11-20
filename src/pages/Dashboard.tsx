@@ -77,7 +77,12 @@ export function Dashboard() {
           <Link to="/app/upload" className="btn">Add a receipt</Link>
         </div>
       )}
-      {stats && stats.count > 0 && <p><Link to="/app/receipts">See all receipts →</Link></p>}
+      {stats && stats.count > 0 && (
+        <p className="links-row">
+          <Link to="/app/receipts">See all receipts →</Link>
+          <Link to="/app/export">Export for taxes →</Link>
+        </p>
+      )}
     </main>
   );
 }
