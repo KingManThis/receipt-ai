@@ -10,6 +10,7 @@ import { Upload } from "./pages/Upload";
 import { Receipts } from "./pages/Receipts";
 import { ReceiptDetail } from "./pages/ReceiptDetail";
 import { Export } from "./pages/Export";
+import { Settings } from "./pages/Settings";
 
 // HashRouter keeps deep links working on GitHub Pages, which has no server-side routing.
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/app/receipts" element={<ProtectedRoute><Receipts /></ProtectedRoute>} />
           <Route path="/app/receipts/:id" element={<ProtectedRoute><ReceiptDetail /></ProtectedRoute>} />
           <Route path="/app/export" element={<ProtectedRoute><Export /></ProtectedRoute>} />
+          <Route path="/app/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </HashRouter>

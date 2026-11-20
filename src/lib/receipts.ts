@@ -38,6 +38,10 @@ const MAX_BYTES = 10 * 1024 * 1024;
 
 let categoriesCache: Promise<Category[]> | null = null;
 
+export function clearCategoriesCache() {
+  categoriesCache = null;
+}
+
 export function fetchCategories(): Promise<Category[]> {
   categoriesCache ??= (async () => {
     const { data, error } = await supabase
@@ -96,8 +100,10 @@ export async function uploadAndExtract(
   const { error: upErr } = await supabase.storage.from("receipts").upload(path, blob, { contentType: blob.type || "image/jpeg" });
   if (upErr) throw new Error("Upload failed: " + upErr.message);
 
+  const { data: profile } = await supabase.from("profiles").select("currency").single();
   const { data: row, error: insErr } = await supabase
-    .from("receipts").insert({ image_path: path, status: "processing" }).select("id").single();
+    .from("receipts").insert({ image_path: path, status: "processing", currency: profile?.currency ?? "USD" })
+    .select("id").single();
   if (insErr || !row) throw new Error("Could not save receipt: " + (insErr?.message ?? "unknown error"));
 
   try {

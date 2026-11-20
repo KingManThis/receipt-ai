@@ -35,6 +35,9 @@ vendor, date, amount and IRS Schedule C category, and export a tax-ready report.
 3. Push to `main` (or run the workflow manually). The site appears at
    `https://<your-github-username>.github.io/receipt-ai/`.
 
+### 2b. Database update for Settings
+In Supabase **SQL Editor**, run `supabase/migrations/0002_settings.sql` once (lets users delete their own account).
+
 ### 3. Optional: Claude AI receipt reading (Edge Function)
 The app reads receipts for free on the user's device by default. For higher accuracy, set
 `RECEIPT_READER = "claude"` in `src/config.ts`, then:
