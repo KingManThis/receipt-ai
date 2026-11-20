@@ -1,15 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+// Trim, and treat empty strings as missing: an unset GitHub variable arrives as "".
+const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim() || undefined;
+const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim() || undefined;
 
 export const supabaseConfigured = Boolean(url && anonKey);
 
 // A placeholder client keeps the app renderable before Supabase is configured;
 // the UI shows a setup notice in that case.
 export const supabase = createClient(
-  url ?? "https://placeholder.supabase.co",
-  anonKey ?? "placeholder-anon-key",
+  supabaseConfigured ? url! : "https://placeholder.supabase.co",
+  supabaseConfigured ? anonKey! : "placeholder-anon-key",
   // PKCE returns "?code=..." in the query string, which doesn't clash with HashRouter's "#/route".
   { auth: { flowType: "pkce" } },
 );
