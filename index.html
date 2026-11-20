@@ -3,8 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ReceiptPilot – AI Receipt Scanner & Expense Tracker for Freelancers</title>
-    <meta name="description" content="Snap a photo of any receipt. AI reads the vendor, date, amount and tax category, then exports a tax-ready expense report for freelancers and small businesses." />
+    <title>ReceiptPilot – Free Receipt Scanner & Expense Tracker for Freelancers</title>
+    <meta name="description" content="Free receipt scanner and expense tracker for freelancers. Snap a receipt, get the vendor, date, total and IRS Schedule C category filled in, then export a tax-ready report." />
+    <link rel="canonical" href="https://kingmanthis.github.io/receipt-ai/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ReceiptPilot – Free Receipt Scanner & Expense Tracker for Freelancers" />
+    <meta property="og:description" content="Snap receipts, sort them into Schedule C categories and export a tax-ready report. Free." />
+    <meta property="og:url" content="https://kingmanthis.github.io/receipt-ai/" />
+    <meta property="og:image" content="https://kingmanthis.github.io/receipt-ai/icons/icon-512.png" />
+    <meta name="twitter:card" content="summary" />
+    <script type="application/ld+json">
+      {"@context":"https://schema.org","@type":"SoftwareApplication","name":"ReceiptPilot","applicationCategory":"FinanceApplication","operatingSystem":"Web, iOS, Android","url":"https://kingmanthis.github.io/receipt-ai/","description":"Receipt scanner and expense tracker for freelancers with IRS Schedule C categories and tax-ready exports.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+    </script>
+    <script type="application/ld+json">
+      {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+        {"@type":"Question","name":"Is ReceiptPilot free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Scanning, storing, reviewing and exporting receipts is free."}},
+        {"@type":"Question","name":"Can I use photos of receipts for taxes?","acceptedAnswer":{"@type":"Answer","text":"Readable digital copies are generally accepted as records. Keep each receipt showing who you paid, how much, when and what for."}},
+        {"@type":"Question","name":"Does it sort expenses into Schedule C categories?","acceptedAnswer":{"@type":"Answer","text":"Yes. Each receipt gets a suggested IRS Schedule C category, meals are counted at 50%, and you can export totals by category for your tax year."}},
+        {"@type":"Question","name":"Is my data private?","acceptedAnswer":{"@type":"Answer","text":"Receipts are read on your own device and stored in a private account that only you can access. You can export or delete everything at any time."}}]}
+    </script>
     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -15,7 +32,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <noscript>
+        <h1>ReceiptPilot: free receipt scanner and expense tracker for freelancers</h1>
+        <p>Snap a receipt, get the vendor, date, total and IRS Schedule C category filled in, and export a tax-ready report. Please enable JavaScript to use the app.</p>
+        <p><a href="guides/schedule-c-expense-categories.html">Schedule C expense categories explained</a> · <a href="guides/how-to-track-receipts-for-taxes.html">How to track receipts for taxes</a></p>
+      </noscript>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

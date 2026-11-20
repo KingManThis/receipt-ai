@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://kingmanthis.github.io/receipt-ai/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://kingmanthis.github.io/receipt-ai/guides/schedule-c-expense-categories.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingmanthis.github.io/receipt-ai/guides/how-to-track-receipts-for-taxes.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingmanthis.github.io/receipt-ai/privacy.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://kingmanthis.github.io/receipt-ai/terms.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+</urlset>

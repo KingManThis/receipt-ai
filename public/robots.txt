@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://kingmanthis.github.io/receipt-ai/sitemap.xml
