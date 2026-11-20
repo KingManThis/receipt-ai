@@ -2,10 +2,8 @@ name: Deploy Supabase functions
 
 # Publishes the server-side functions (supabase/functions) to your Supabase project.
 # Needs: repository secret SUPABASE_ACCESS_TOKEN, repository variable SUPABASE_PROJECT_REF.
+# Manual only: the app uses the free on-device reader unless RECEIPT_READER is set to "claude".
 on:
-  push:
-    branches: [main]
-    paths: ["supabase/functions/**"]
   workflow_dispatch:
 
 jobs:

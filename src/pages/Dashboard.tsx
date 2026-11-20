@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { formatMoney } from "../lib/receipts";
 import { useAuth } from "../components/AuthProvider";
+import { RECEIPT_READER } from "../config";
 
 type Stats = { count: number; needsReview: number; yearTotal: number; monthTotal: number; aiUsed: number };
 
@@ -49,16 +50,20 @@ export function Dashboard() {
         <div className="card stat"><span className="muted">Spent this month</span><strong>{stats ? formatMoney(stats.monthTotal) : "…"}</strong></div>
         <div className="card stat"><span className="muted">Spent this year</span><strong>{stats ? formatMoney(stats.yearTotal) : "…"}</strong></div>
         <div className="card stat"><span className="muted">Receipts saved</span><strong>{stats?.count ?? "…"}</strong></div>
-        <div className="card stat">
-          <span className="muted">AI reads this month</span>
-          <strong>{stats ? (plan === "pro" ? stats.aiUsed : `${stats.aiUsed} / 20`) : "…"}</strong>
-        </div>
+        {RECEIPT_READER === "claude" ? (
+          <div className="card stat">
+            <span className="muted">AI reads this month</span>
+            <strong>{stats ? (plan === "pro" ? stats.aiUsed : `${stats.aiUsed} / 20`) : "…"}</strong>
+          </div>
+        ) : (
+          <div className="card stat"><span className="muted">To review</span><strong>{stats?.needsReview ?? "…"}</strong></div>
+        )}
       </div>
 
       {stats?.count === 0 && (
         <div className="card empty">
           <h2>Add your first receipt</h2>
-          <p className="muted">Snap a photo and the AI fills in the vendor, date, amount and tax category.</p>
+          <p className="muted">Snap a photo and we fill in the vendor, date and amounts for you to check.</p>
           <Link to="/app/upload" className="btn">Add a receipt</Link>
         </div>
       )}

@@ -1,5 +1,7 @@
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { RECEIPT_READER } from "../config";
+import { parseReceipt } from "./parseReceipt";
 
 export type Category = { id: string; name: string; schedule_c_line: string | null; deductible_percent: number };
 
@@ -18,7 +20,7 @@ export type Receipt = {
   payment_method: string | null;
   notes: string | null;
   ai_confidence: number | null;
-  ai_raw: { uncertain_fields?: string[]; is_receipt?: boolean; error?: string } | null;
+  ai_raw: { uncertain_fields?: string[]; is_receipt?: boolean; error?: string; text?: string; engine?: string } | null;
   status: ReceiptStatus;
   created_at: string;
   categories?: { name: string } | null;
@@ -34,11 +36,16 @@ export const STATUS_LABEL: Record<ReceiptStatus, string> = {
 export const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf";
 const MAX_BYTES = 10 * 1024 * 1024;
 
-export async function fetchCategories(): Promise<Category[]> {
-  const { data, error } = await supabase
-    .from("categories").select("id, name, schedule_c_line, deductible_percent").order("name");
-  if (error) throw error;
-  return data ?? [];
+let categoriesCache: Promise<Category[]> | null = null;
+
+export function fetchCategories(): Promise<Category[]> {
+  categoriesCache ??= (async () => {
+    const { data, error } = await supabase
+      .from("categories").select("id, name, schedule_c_line, deductible_percent").order("name");
+    if (error) { categoriesCache = null; throw error; }
+    return data ?? [];
+  })();
+  return categoriesCache;
 }
 
 export function formatMoney(amount: number | null, currency = "USD"): string {
@@ -77,11 +84,15 @@ async function prepareFile(file: File): Promise<Blob> {
  * Upload one file, create its receipt row, and ask the AI to read it.
  * Upload problems throw; an AI failure still returns the receipt id (with aiError) so it can be filled in by hand.
  */
-export async function uploadAndExtract(file: File, userId: string): Promise<{ id: string; aiError?: string }> {
+export async function uploadAndExtract(
+  file: File, userId: string, progress?: (stage: string) => void,
+): Promise<{ id: string; aiError?: string }> {
+  progress?.("Preparing…");
   const blob = await prepareFile(file);
   const ext = blob.type === "application/pdf" ? "pdf" : blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
   const path = `${userId}/${crypto.randomUUID()}.${ext}`;
 
+  progress?.("Uploading…");
   const { error: upErr } = await supabase.storage.from("receipts").upload(path, blob, { contentType: blob.type || "image/jpeg" });
   if (upErr) throw new Error("Upload failed: " + upErr.message);
 
@@ -90,14 +101,57 @@ export async function uploadAndExtract(file: File, userId: string): Promise<{ id
   if (insErr || !row) throw new Error("Could not save receipt: " + (insErr?.message ?? "unknown error"));
 
   try {
-    await extract(row.id);
+    if (RECEIPT_READER === "free") await scanAndSave(row.id, blob, progress);
+    else { progress?.("Reading…"); await extract(row.id); }
     return { id: row.id };
   } catch (err) {
     return { id: row.id, aiError: err instanceof Error ? err.message : "The AI couldn't read this receipt." };
   }
 }
 
-/** Run (or re-run) AI reading for a receipt. Throws a friendly message on failure. */
+/** Free reader: scan on this device, parse with rules, save for review. */
+async function scanAndSave(receiptId: string, blob: Blob, progress?: (stage: string) => void): Promise<void> {
+  const { scanReceipt } = await import("./scan");
+  let result;
+  try {
+    result = await scanReceipt(blob, progress);
+  } catch (err) {
+    console.error(err);
+    await supabase.from("receipts").update({ status: "failed", ai_raw: { error: "Scan failed", engine: "free" } }).eq("id", receiptId);
+    throw new Error("Couldn't scan this file. You can fill it in by hand.");
+  }
+  const parsed = parseReceipt(result.text);
+  const categories = await fetchCategories().catch(() => []);
+  const category = categories.find((c) => c.name === parsed.category);
+  const uncertain = result.confidence < 0.6
+    ? ["vendor", "receipt_date", "subtotal", "tax", "total", "category"]
+    : parsed.uncertain_fields;
+  const { error } = await supabase.from("receipts").update({
+    vendor: parsed.vendor,
+    receipt_date: parsed.receipt_date,
+    subtotal: parsed.subtotal,
+    tax: parsed.tax,
+    total: parsed.total,
+    payment_method: parsed.payment_method,
+    category_id: category?.id ?? null,
+    notes: parsed.tip ? `Tip: ${parsed.tip}` : null,
+    ai_confidence: Math.round(Math.min(1, Math.max(0, result.confidence)) * 100) / 100,
+    ai_raw: { engine: result.engine, text: result.text.slice(0, 20000), uncertain_fields: uncertain },
+    status: "needs_review",
+  }).eq("id", receiptId);
+  if (error) throw new Error("Scanned, but couldn't save: " + error.message);
+}
+
+/** Re-read a stored receipt with whichever reader is configured. */
+export async function reread(receipt: Pick<Receipt, "id" | "image_path">): Promise<void> {
+  if (RECEIPT_READER === "claude") return extract(receipt.id);
+  if (!receipt.image_path) throw new Error("No file to scan.");
+  const { data, error } = await supabase.storage.from("receipts").download(receipt.image_path);
+  if (error || !data) throw new Error("Couldn't load the file to rescan.");
+  return scanAndSave(receipt.id, data);
+}
+
+/** Claude reader: run (or re-run) AI reading via the Edge Function. Throws a friendly message on failure. */
 export async function extract(receiptId: string): Promise<void> {
   const { error } = await supabase.functions.invoke("extract-receipt", { body: { receipt_id: receiptId } });
   if (!error) return;

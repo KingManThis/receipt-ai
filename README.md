@@ -3,7 +3,8 @@
 AI receipt scanner and expense tracker for freelancers. Snap a receipt, let AI fill in the
 vendor, date, amount and IRS Schedule C category, and export a tax-ready report.
 
-**Stack:** React + Vite (hosted on GitHub Pages) · Supabase (auth, database, storage, Edge Functions) · Claude API (receipt reading)
+**Stack:** React + Vite (hosted on GitHub Pages) · Supabase (auth, database, storage) · free on-device receipt reading
+(Tesseract.js OCR for photos, pdf.js for PDFs), with optional Claude API reading via a Supabase Edge Function
 
 ## Status
 
@@ -34,7 +35,9 @@ vendor, date, amount and IRS Schedule C category, and export a tax-ready report.
 3. Push to `main` (or run the workflow manually). The site appears at
    `https://<your-github-username>.github.io/receipt-ai/`.
 
-### 3. AI receipt reading (Edge Function)
+### 3. Optional: Claude AI receipt reading (Edge Function)
+The app reads receipts for free on the user's device by default. For higher accuracy, set
+`RECEIPT_READER = "claude"` in `src/config.ts`, then:
 1. Get an API key at console.anthropic.com (API Keys → Create key) and add billing credit.
 2. Supabase → **Edge Functions → Secrets** → add `ANTHROPIC_API_KEY` with that key.
 3. Deploy the function, either:

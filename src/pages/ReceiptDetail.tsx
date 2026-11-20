@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import {
-  deleteReceipt, extract, fetchCategories, signedUrl, STATUS_LABEL, type Category, type Receipt,
+  deleteReceipt, fetchCategories, reread, signedUrl, STATUS_LABEL, type Category, type Receipt,
 } from "../lib/receipts";
 
 type Form = {
@@ -87,7 +87,7 @@ export function ReceiptDetail() {
   async function retry() {
     setBusy("retry");
     setError(null);
-    try { await extract(receipt!.id); } catch (err) { setError(err instanceof Error ? err.message : "Failed"); }
+    try { await reread(receipt!); } catch (err) { setError(err instanceof Error ? err.message : "Failed"); }
     await load();
     setBusy("");
   }
@@ -108,12 +108,12 @@ export function ReceiptDetail() {
       </div>
 
       {receipt.ai_raw?.is_receipt === false && (
-        <p className="alert">The AI doesn't think this is a receipt. Check the image.</p>
+        <p className="alert">This doesn't look like a receipt. Check the image.</p>
       )}
       {receipt.status === "failed" && (
-        <p className="alert">{receipt.ai_raw?.error ?? "The AI couldn't read this one."} Fill it in by hand or try again.</p>
+        <p className="alert">{receipt.ai_raw?.error ?? "We couldn't read this one."} Fill it in by hand or try again.</p>
       )}
-      {uncertain.size > 0 && <p className="hint">Highlighted fields were hard to read. Please check them.</p>}
+      {uncertain.size > 0 && <p className="hint">Highlighted fields were hard to read or missing. Please check them.</p>}
 
       <div className="detail">
         <div className="card preview">
@@ -148,12 +148,18 @@ export function ReceiptDetail() {
             <label>Currency<input maxLength={3} {...field("currency")} /></label>
           </div>
           <label>Notes<textarea rows={2} {...field("notes")} /></label>
+          {receipt.ai_raw?.text && (
+            <details className="scanned">
+              <summary>Scanned text</summary>
+              <pre>{receipt.ai_raw.text}</pre>
+            </details>
+          )}
 
           {error && <p className="alert">{error}</p>}
           <button className="btn full" disabled={!!busy}>{busy === "save" ? "Saving…" : "Save & confirm"}</button>
           <div className="row-actions">
             <button type="button" className="link" onClick={retry} disabled={!!busy}>
-              {busy === "retry" ? "Reading…" : "Re-read with AI"}
+              {busy === "retry" ? "Scanning…" : "Scan again"}
             </button>
             <button type="button" className="link danger" onClick={remove} disabled={!!busy}>Delete</button>
           </div>

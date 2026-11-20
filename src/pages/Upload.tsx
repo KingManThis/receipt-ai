@@ -26,8 +26,8 @@ export function Upload() {
       for (let next = queue.shift(); next; next = queue.shift()) {
         const { file, key } = next;
         try {
-          const { id, aiError } = await uploadAndExtract(file, session.user.id);
-          update(key, aiError ? { state: "error", receiptId: id, message: aiError } : { state: "done", receiptId: id });
+          const { id, aiError } = await uploadAndExtract(file, session.user.id, (stage) => update(key, { message: stage }));
+          update(key, aiError ? { state: "error", receiptId: id, message: aiError } : { state: "done", receiptId: id, message: undefined });
         } catch (err) {
           update(key, { state: "error", message: err instanceof Error ? err.message : "Something went wrong" });
         }
@@ -47,7 +47,8 @@ export function Upload() {
   return (
     <main className="container">
       <h1>Add receipts</h1>
-      <p className="muted">Take a photo or upload images and PDFs. The AI fills in the details; you check them.</p>
+      <p className="muted">Take a photo or upload images and PDFs. We pull out the details; you check them.</p>
+      <p className="muted small-text">Tip: lay the receipt flat, in good light, filling the frame.</p>
 
       <div className="upload-actions">
         <button className="btn" onClick={() => cameraInput.current?.click()}>📸 Take photo</button>
@@ -70,7 +71,7 @@ export function Upload() {
           {items.map((it) => (
             <li key={it.key} className="card row">
               <span className="truncate">{it.name}</span>
-              {it.state === "working" && <span className="muted">Reading…</span>}
+              {it.state === "working" && <span className="muted">{it.message ?? "Working…"}</span>}
               {it.state === "done" && <Link to={`/app/receipts/${it.receiptId}`}>Review →</Link>}
               {it.state === "error" && (
                 <span className="error-text">

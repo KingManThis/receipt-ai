@@ -118,3 +118,6 @@ select, textarea {
   .filters select { flex: 1 1 45%; }
   .stat strong { font-size: 1.4rem; }
 }
+.scanned { margin: 0 0 1rem; font-size: .9rem; }
+.scanned summary { cursor: pointer; color: var(--muted); }
+.scanned pre { white-space: pre-wrap; max-height: 260px; overflow: auto; background: var(--bg); padding: .75rem; border-radius: 8px; font-size: .8rem; }
