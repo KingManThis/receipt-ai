@@ -1,0 +1,164 @@
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import {
+  deleteReceipt, extract, fetchCategories, signedUrl, STATUS_LABEL, type Category, type Receipt,
+} from "../lib/receipts";
+
+type Form = {
+  vendor: string; receipt_date: string; subtotal: string; tax: string; total: string;
+  currency: string; category_id: string; payment_method: string; notes: string;
+};
+
+const toForm = (r: Receipt): Form => ({
+  vendor: r.vendor ?? "",
+  receipt_date: r.receipt_date ?? "",
+  subtotal: r.subtotal?.toString() ?? "",
+  tax: r.tax?.toString() ?? "",
+  total: r.total?.toString() ?? "",
+  currency: r.currency ?? "USD",
+  category_id: r.category_id ?? "",
+  payment_method: r.payment_method ?? "",
+  notes: r.notes ?? "",
+});
+
+const num = (v: string) => (v.trim() === "" ? null : Number(v));
+
+export function ReceiptDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [form, setForm] = useState<Form | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState<"" | "save" | "retry" | "delete">("");
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    const { data, error } = await supabase.from("receipts").select("*").eq("id", id!).single();
+    if (error || !data) { setError("Receipt not found."); return; }
+    const r = data as Receipt;
+    setReceipt(r);
+    setForm(toForm(r));
+    if (r.image_path && !imageUrl) setImageUrl(await signedUrl(r.image_path));
+  }
+
+  useEffect(() => {
+    load();
+    fetchCategories().then(setCategories).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  if (error && !receipt) return <main className="container"><p className="alert">{error}</p></main>;
+  if (!receipt || !form) return <main className="container"><p className="muted">Loading…</p></main>;
+
+  const uncertain = new Set(receipt.status === "needs_review" ? receipt.ai_raw?.uncertain_fields ?? [] : []);
+  const field = (key: keyof Form) => ({
+    value: form[key],
+    onChange: (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value }),
+    className: uncertain.has(key === "category_id" ? "category" : key) ? "uncertain" : undefined,
+  });
+  const isPdf = receipt.image_path?.endsWith(".pdf");
+  const amountsDontAddUp = num(form.subtotal) != null && num(form.total) != null &&
+    Math.abs((num(form.subtotal) ?? 0) + (num(form.tax) ?? 0) - (num(form.total) ?? 0)) > 0.02 &&
+    !(receipt.notes ?? "").includes("Tip");
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setBusy("save");
+    setError(null);
+    const { error } = await supabase.from("receipts").update({
+      vendor: form!.vendor.trim() || null,
+      receipt_date: form!.receipt_date || null,
+      subtotal: num(form!.subtotal),
+      tax: num(form!.tax),
+      total: num(form!.total),
+      currency: form!.currency.trim().toUpperCase() || "USD",
+      category_id: form!.category_id || null,
+      payment_method: form!.payment_method.trim() || null,
+      notes: form!.notes.trim() || null,
+      status: "confirmed",
+    }).eq("id", receipt!.id);
+    setBusy("");
+    if (error) setError(error.message);
+    else navigate("/app/receipts?status=needs_review");
+  }
+
+  async function retry() {
+    setBusy("retry");
+    setError(null);
+    try { await extract(receipt!.id); } catch (err) { setError(err instanceof Error ? err.message : "Failed"); }
+    await load();
+    setBusy("");
+  }
+
+  async function remove() {
+    if (!confirm("Delete this receipt and its image? This can't be undone.")) return;
+    setBusy("delete");
+    try { await deleteReceipt(receipt!); navigate("/app/receipts"); }
+    catch (err) { setError(err instanceof Error ? err.message : "Delete failed"); setBusy(""); }
+  }
+
+  return (
+    <main className="container">
+      <p><Link to="/app/receipts">← All receipts</Link></p>
+      <div className="page-head">
+        <h1>{receipt.vendor || "Receipt"}</h1>
+        <span className={`badge ${receipt.status}`}>{STATUS_LABEL[receipt.status]}</span>
+      </div>
+
+      {receipt.ai_raw?.is_receipt === false && (
+        <p className="alert">The AI doesn't think this is a receipt. Check the image.</p>
+      )}
+      {receipt.status === "failed" && (
+        <p className="alert">{receipt.ai_raw?.error ?? "The AI couldn't read this one."} Fill it in by hand or try again.</p>
+      )}
+      {uncertain.size > 0 && <p className="hint">Highlighted fields were hard to read. Please check them.</p>}
+
+      <div className="detail">
+        <div className="card preview">
+          {!imageUrl && <p className="muted">No image</p>}
+          {imageUrl && isPdf && <a href={imageUrl} target="_blank" rel="noreferrer">Open PDF ↗</a>}
+          {imageUrl && !isPdf && (
+            <a href={imageUrl} target="_blank" rel="noreferrer"><img src={imageUrl} alt="Receipt" /></a>
+          )}
+        </div>
+
+        <form className="card" onSubmit={save}>
+          <label>Vendor<input {...field("vendor")} /></label>
+          <label>Date<input type="date" {...field("receipt_date")} /></label>
+          <div className="three">
+            <label>Subtotal<input inputMode="decimal" type="number" step="0.01" {...field("subtotal")} /></label>
+            <label>Tax<input inputMode="decimal" type="number" step="0.01" {...field("tax")} /></label>
+            <label>Total<input inputMode="decimal" type="number" step="0.01" {...field("total")} /></label>
+          </div>
+          {amountsDontAddUp && <p className="hint">Subtotal + tax doesn't equal the total. Worth a quick check.</p>}
+          <label>Category
+            <select {...field("category_id")}>
+              <option value="">Choose…</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}{c.schedule_c_line ? ` (Sch. C ${c.schedule_c_line})` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="two">
+            <label>Payment method<input {...field("payment_method")} /></label>
+            <label>Currency<input maxLength={3} {...field("currency")} /></label>
+          </div>
+          <label>Notes<textarea rows={2} {...field("notes")} /></label>
+
+          {error && <p className="alert">{error}</p>}
+          <button className="btn full" disabled={!!busy}>{busy === "save" ? "Saving…" : "Save & confirm"}</button>
+          <div className="row-actions">
+            <button type="button" className="link" onClick={retry} disabled={!!busy}>
+              {busy === "retry" ? "Reading…" : "Re-read with AI"}
+            </button>
+            <button type="button" className="link danger" onClick={remove} disabled={!!busy}>Delete</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  );
+}

@@ -18,7 +18,8 @@ export function Header() {
       <nav>
         {session ? (
           <>
-            <Link to="/app">Dashboard</Link>
+            <Link to="/app">Home</Link>
+            <Link to="/app/receipts">Receipts</Link>
             <button className="link" onClick={signOut}>Sign out</button>
           </>
         ) : (

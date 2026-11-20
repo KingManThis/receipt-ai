@@ -8,7 +8,7 @@ vendor, date, amount and IRS Schedule C category, and export a tax-ready report.
 ## Status
 
 - [x] Phase 1: landing page, sign-up/log-in (email + Google), password reset, database schema with row-level security, auto-deploy
-- [ ] Phase 2: receipt upload, AI extraction, review screen, receipt list
+- [x] Phase 2: receipt upload (camera + files), AI extraction, review screen, receipt list with filters
 - [ ] Phase 3: dashboard charts, CSV / tax summary / ZIP exports
 - [ ] Phase 4: mobile camera, installable app, accuracy testing
 - [ ] Phase 5: Stripe plans, usage limits, privacy & terms
@@ -33,6 +33,16 @@ vendor, date, amount and IRS Schedule C category, and export a tax-ready report.
 2. **Settings → Pages → Source: GitHub Actions**.
 3. Push to `main` (or run the workflow manually). The site appears at
    `https://<your-github-username>.github.io/receipt-ai/`.
+
+### 3. AI receipt reading (Edge Function)
+1. Get an API key at console.anthropic.com (API Keys → Create key) and add billing credit.
+2. Supabase → **Edge Functions → Secrets** → add `ANTHROPIC_API_KEY` with that key.
+3. Deploy the function, either:
+   - **Automatically (recommended):** Supabase → Account → **Access Tokens** → generate a token. In GitHub add it as
+     repository **secret** `SUPABASE_ACCESS_TOKEN`, and add repository **variable** `SUPABASE_PROJECT_REF`
+     (the part before `.supabase.co` in your project URL). Then run **Actions → Deploy Supabase functions**.
+   - **By hand:** Supabase → Edge Functions → Deploy a new function → Via editor, name it `extract-receipt`,
+     paste `supabase/functions/extract-receipt/index.ts`, deploy.
 
 ## Local development
 

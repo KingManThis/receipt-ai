@@ -1,40 +1,68 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { formatMoney } from "../lib/receipts";
 import { useAuth } from "../components/AuthProvider";
 
-type Profile = { full_name: string | null; plan: string };
+type Stats = { count: number; needsReview: number; yearTotal: number; monthTotal: number; aiUsed: number };
 
 export function Dashboard() {
   const { session } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [receiptCount, setReceiptCount] = useState<number | null>(null);
+  const [plan, setPlan] = useState<string>("free");
+  const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
-    supabase.from("profiles").select("full_name, plan").single()
-      .then(({ data }) => setProfile(data));
-    supabase.from("receipts").select("id", { count: "exact", head: true })
-      .then(({ count }) => setReceiptCount(count ?? 0));
+    const now = new Date();
+    const year = `${now.getFullYear()}-01-01`;
+    const month = now.toISOString().slice(0, 7) + "-01";
+    Promise.all([
+      supabase.from("profiles").select("plan").single(),
+      supabase.from("receipts").select("total, receipt_date, status"),
+      supabase.from("usage").select("receipts_processed").eq("month", month).maybeSingle(),
+    ]).then(([p, r, u]) => {
+      if (p.data) setPlan(p.data.plan);
+      const rows = r.data ?? [];
+      setStats({
+        count: rows.length,
+        needsReview: rows.filter((x) => x.status === "needs_review" || x.status === "failed").length,
+        yearTotal: rows.filter((x) => x.receipt_date && x.receipt_date >= year).reduce((s, x) => s + (x.total ?? 0), 0),
+        monthTotal: rows.filter((x) => x.receipt_date && x.receipt_date >= month).reduce((s, x) => s + (x.total ?? 0), 0),
+        aiUsed: u.data?.receipts_processed ?? 0,
+      });
+    });
   }, []);
-
-  const name = profile?.full_name || session?.user.email;
 
   return (
     <main className="container">
-      <h1>Hi, {name}</h1>
+      <div className="page-head">
+        <h1>Hi, {session?.user.email}</h1>
+        <Link to="/app/upload" className="btn">📸 Add receipt</Link>
+      </div>
+
+      {stats && stats.needsReview > 0 && (
+        <Link to="/app/receipts?status=needs_review" className="card banner">
+          {stats.needsReview} receipt{stats.needsReview === 1 ? "" : "s"} to review →
+        </Link>
+      )}
+
       <div className="grid">
+        <div className="card stat"><span className="muted">Spent this month</span><strong>{stats ? formatMoney(stats.monthTotal) : "…"}</strong></div>
+        <div className="card stat"><span className="muted">Spent this year</span><strong>{stats ? formatMoney(stats.yearTotal) : "…"}</strong></div>
+        <div className="card stat"><span className="muted">Receipts saved</span><strong>{stats?.count ?? "…"}</strong></div>
         <div className="card stat">
-          <span className="muted">Receipts saved</span>
-          <strong>{receiptCount ?? "…"}</strong>
-        </div>
-        <div className="card stat">
-          <span className="muted">Plan</span>
-          <strong>{profile?.plan === "pro" ? "Pro" : "Free"}</strong>
+          <span className="muted">AI reads this month</span>
+          <strong>{stats ? (plan === "pro" ? stats.aiUsed : `${stats.aiUsed} / 20`) : "…"}</strong>
         </div>
       </div>
-      <div className="card empty">
-        <h2>Receipt upload is coming next</h2>
-        <p className="muted">Phase 2 adds photo upload and AI extraction here.</p>
-      </div>
+
+      {stats?.count === 0 && (
+        <div className="card empty">
+          <h2>Add your first receipt</h2>
+          <p className="muted">Snap a photo and the AI fills in the vendor, date, amount and tax category.</p>
+          <Link to="/app/upload" className="btn">Add a receipt</Link>
+        </div>
+      )}
+      {stats && stats.count > 0 && <p><Link to="/app/receipts">See all receipts →</Link></p>}
     </main>
   );
 }
