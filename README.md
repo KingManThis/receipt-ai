@@ -12,7 +12,7 @@ vendor, date, amount and IRS Schedule C category, and export a tax-ready report.
 - [x] Phase 2: receipt upload (camera + files), AI extraction, review screen, receipt list with filters
 - [x] Phase 3: Export page with receipts CSV, Schedule C tax summary (CSV + print/PDF), ZIP of images + CSVs
 - [ ] Phase 4: mobile camera, installable app, accuracy testing
-- [ ] Phase 5: Stripe plans, usage limits, privacy & terms
+- [x] Phase 5: SEO landing + guides + sitemap, privacy & terms, optional Pro plan via Stripe (off until configured)
 
 ## One-time setup
 
@@ -55,6 +55,20 @@ The app reads receipts for free on the user's device by default. For higher accu
      (the part before `.supabase.co` in your project URL). Then run **Actions → Deploy Supabase functions**.
    - **By hand:** Supabase → Edge Functions → Deploy a new function → Via editor, name it `extract-receipt`,
      paste `supabase/functions/extract-receipt/index.ts`, deploy.
+
+### 4. Optional: Pro plan with Stripe
+Pro gives subscribers Claude AI reading. It stays "Coming soon" until you finish these steps.
+1. Do step 3 above (Claude key + deploy functions); the deploy workflow also deploys `stripe-webhook`.
+2. In Supabase SQL Editor run `supabase/migrations/0003_billing.sql`.
+3. In Stripe: create a product "ReceiptPilot Pro" with a monthly price, then **Payment Links → New** for it.
+   After payment, redirect to `https://<you>.github.io/receipt-ai/#/app/settings`.
+4. Stripe → **Developers → Webhooks → Add endpoint**:
+   URL `https://<project-ref>.supabase.co/functions/v1/stripe-webhook`, events
+   `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`,
+   `customer.subscription.deleted`. Copy the signing secret (`whsec_…`) into Supabase Edge Function secret
+   `STRIPE_WEBHOOK_SECRET`.
+5. Stripe → **Settings → Billing → Customer portal**: activate it and copy the login link.
+6. In `src/config.ts` set `STRIPE_PAYMENT_LINK` and `STRIPE_PORTAL_LINK` (and `PRO_PRICE_LABEL`), commit, push.
 
 ## Local development
 

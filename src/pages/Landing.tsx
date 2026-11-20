@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { APP_NAME } from "../config";
 import { useAuth } from "../components/AuthProvider";
 import { displayName } from "../lib/greeting";
+import { Pricing } from "../components/Pricing";
 
 const base = import.meta.env.BASE_URL;
 
@@ -81,6 +82,8 @@ export function Landing() {
               ))}
             </ol>
           </section>
+
+          <Pricing signedIn={false} />
 
           <section className="section">
             <h2 className="section-title">Questions</h2>

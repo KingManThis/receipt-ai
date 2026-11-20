@@ -100,15 +100,14 @@ export async function uploadAndExtract(
   const { error: upErr } = await supabase.storage.from("receipts").upload(path, blob, { contentType: blob.type || "image/jpeg" });
   if (upErr) throw new Error("Upload failed: " + upErr.message);
 
-  const { data: profile } = await supabase.from("profiles").select("currency").single();
+  const { data: profile } = await supabase.from("profiles").select("currency, plan").single();
   const { data: row, error: insErr } = await supabase
     .from("receipts").insert({ image_path: path, status: "processing", currency: profile?.currency ?? "USD" })
     .select("id").single();
   if (insErr || !row) throw new Error("Could not save receipt: " + (insErr?.message ?? "unknown error"));
 
   try {
-    if (RECEIPT_READER === "free") await scanAndSave(row.id, blob, progress);
-    else { progress?.("Reading…"); await extract(row.id); }
+    await readWithBestReader(row.id, blob, profile?.plan === "pro", progress);
     return { id: row.id };
   } catch (err) {
     return { id: row.id, aiError: err instanceof Error ? err.message : "The AI couldn't read this receipt." };
@@ -148,13 +147,32 @@ async function scanAndSave(receiptId: string, blob: Blob, progress?: (stage: str
   if (error) throw new Error("Scanned, but couldn't save: " + error.message);
 }
 
-/** Re-read a stored receipt with whichever reader is configured. */
+/**
+ * Pro users (or RECEIPT_READER = "claude") get Claude AI reading. If that isn't available
+ * (function not deployed, limit reached, outage), fall back to the free on-device scanner.
+ */
+async function readWithBestReader(
+  receiptId: string, blob: Blob, isPro: boolean, progress?: (stage: string) => void,
+): Promise<void> {
+  if (isPro || RECEIPT_READER === "claude") {
+    progress?.("Reading with AI…");
+    try {
+      await extract(receiptId);
+      return;
+    } catch (err) {
+      console.warn("AI reading unavailable, using on-device scanner", err);
+    }
+  }
+  await scanAndSave(receiptId, blob, progress);
+}
+
+/** Re-read a stored receipt with the best reader for this user's plan. */
 export async function reread(receipt: Pick<Receipt, "id" | "image_path">): Promise<void> {
-  if (RECEIPT_READER === "claude") return extract(receipt.id);
   if (!receipt.image_path) throw new Error("No file to scan.");
   const { data, error } = await supabase.storage.from("receipts").download(receipt.image_path);
   if (error || !data) throw new Error("Couldn't load the file to rescan.");
-  return scanAndSave(receipt.id, data);
+  const { data: profile } = await supabase.from("profiles").select("plan").single();
+  return readWithBestReader(receipt.id, data, profile?.plan === "pro");
 }
 
 /** Claude reader: run (or re-run) AI reading via the Edge Function. Throws a friendly message on failure. */

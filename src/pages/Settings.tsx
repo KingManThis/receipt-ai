@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../components/AuthProvider";
 import { clearCategoriesCache, fetchCategories, type Category } from "../lib/receipts";
+import { PRO_FEATURES, PRO_PRICE_LABEL, STRIPE_PAYMENT_LINK, STRIPE_PORTAL_LINK } from "../config";
 
 const CURRENCIES = ["USD", "CAD", "GBP", "EUR", "AUD", "NZD", "JMD", "INR", "NGN", "ZAR"];
 const SCHEDULE_C_LINES = [
@@ -19,6 +20,7 @@ export function Settings() {
   // Profile
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState("USD");
+  const [plan, setPlan] = useState("free");
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
 
   // Categories
@@ -42,8 +44,8 @@ export function Settings() {
   }
 
   useEffect(() => {
-    supabase.from("profiles").select("full_name, currency").single().then(({ data }) => {
-      if (data) { setName(data.full_name ?? ""); setCurrency(data.currency ?? "USD"); }
+    supabase.from("profiles").select("full_name, currency, plan").single().then(({ data }) => {
+      if (data) { setName(data.full_name ?? ""); setCurrency(data.currency ?? "USD"); setPlan(data.plan ?? "free"); }
     });
     loadCategories();
   }, []);
@@ -150,6 +152,32 @@ export function Settings() {
             {profileMsg && <span className="muted">{profileMsg}</span>}
           </div>
         </form>
+      </section>
+
+      <section className="card" id="plan">
+        <h2>Plan</h2>
+        {plan === "pro" ? (
+          <>
+            <p>You're on <strong>Pro</strong>. Thank you for supporting ReceiptPilot! 💙</p>
+            {STRIPE_PORTAL_LINK && (
+              <a className="btn outline" href={`${STRIPE_PORTAL_LINK}?prefilled_email=${encodeURIComponent(session?.user.email ?? "")}`}>
+                Manage or cancel subscription
+              </a>
+            )}
+          </>
+        ) : (
+          <>
+            <p>You're on <strong>Free</strong>: unlimited receipts with on-device scanning.</p>
+            <p className="muted small-text">Pro ({PRO_PRICE_LABEL}): {PRO_FEATURES.join(" · ")}</p>
+            {STRIPE_PAYMENT_LINK ? (
+              <a className="btn" href={`${STRIPE_PAYMENT_LINK}?client_reference_id=${session?.user.id}&prefilled_email=${encodeURIComponent(session?.user.email ?? "")}`}>
+                Upgrade to Pro
+              </a>
+            ) : (
+              <button className="btn" disabled>Pro coming soon</button>
+            )}
+          </>
+        )}
       </section>
 
       <section className="card">
