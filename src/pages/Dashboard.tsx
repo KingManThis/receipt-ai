@@ -5,6 +5,7 @@ import { formatMoney } from "../lib/receipts";
 import { useAuth } from "../components/AuthProvider";
 import { RECEIPT_READER } from "../config";
 import { displayName, timeGreeting } from "../lib/greeting";
+import { InstallPrompt } from "../components/InstallPrompt";
 
 type Stats = { count: number; needsReview: number; yearTotal: number; monthTotal: number; aiUsed: number };
 
@@ -49,6 +50,8 @@ export function Dashboard() {
         </div>
         <Link to="/app/upload" className="btn">📸 Add receipt</Link>
       </div>
+
+      <InstallPrompt />
 
       {stats && stats.needsReview > 0 && (
         <Link to="/app/receipts?status=needs_review" className="card banner">
