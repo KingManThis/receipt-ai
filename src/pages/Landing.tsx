@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { APP_NAME } from "../config";
+import { useAuth } from "../components/AuthProvider";
+import { displayName } from "../lib/greeting";
 
 const features = [
   { icon: "📸", title: "Snap or upload", text: "Photograph a paper receipt or upload a PDF. Add a whole stack at once." },
@@ -9,17 +11,33 @@ const features = [
 ];
 
 export function Landing() {
+  const { session } = useAuth();
+
   return (
     <main>
-      <section className="hero">
-        <h1>Stop losing receipts.<br />Stop dreading tax time.</h1>
-        <p className="lead">
-          {APP_NAME} is a receipt scanner and expense tracker for freelancers and small
-          businesses. Snap a photo and get a tax-ready expense report.
-        </p>
-        <Link to="/login?mode=signup" className="btn">Start free</Link>
-        <p className="muted small-text">Free to use. No card needed.</p>
-      </section>
+      {session ? (
+        <section className="hero">
+          <h1>Welcome back, {displayName(session)} 👋</h1>
+          <p className="lead">
+            Good to see you. Got new receipts? Snap them now while they're in your pocket,
+            and tax time takes care of itself.
+          </p>
+          <div className="hero-actions">
+            <Link to="/app/upload" className="btn">📸 Add a receipt</Link>
+            <Link to="/app" className="btn outline">Go to my dashboard</Link>
+          </div>
+        </section>
+      ) : (
+        <section className="hero">
+          <h1>Stop losing receipts.<br />Stop dreading tax time.</h1>
+          <p className="lead">
+            {APP_NAME} is a receipt scanner and expense tracker for freelancers and small
+            businesses. Snap a photo and get a tax-ready expense report.
+          </p>
+          <Link to="/login?mode=signup" className="btn">Start free</Link>
+          <p className="muted small-text">Free to use. No card needed.</p>
+        </section>
+      )}
 
       <section className="grid">
         {features.map((f) => (

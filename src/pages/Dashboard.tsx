@@ -4,12 +4,14 @@ import { supabase } from "../lib/supabase";
 import { formatMoney } from "../lib/receipts";
 import { useAuth } from "../components/AuthProvider";
 import { RECEIPT_READER } from "../config";
+import { displayName, timeGreeting } from "../lib/greeting";
 
 type Stats = { count: number; needsReview: number; yearTotal: number; monthTotal: number; aiUsed: number };
 
 export function Dashboard() {
   const { session } = useAuth();
   const [plan, setPlan] = useState<string>("free");
+  const [fullName, setFullName] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
@@ -17,11 +19,11 @@ export function Dashboard() {
     const year = `${now.getFullYear()}-01-01`;
     const month = now.toISOString().slice(0, 7) + "-01";
     Promise.all([
-      supabase.from("profiles").select("plan").single(),
+      supabase.from("profiles").select("plan, full_name").single(),
       supabase.from("receipts").select("total, receipt_date, status"),
       supabase.from("usage").select("receipts_processed").eq("month", month).maybeSingle(),
     ]).then(([p, r, u]) => {
-      if (p.data) setPlan(p.data.plan);
+      if (p.data) { setPlan(p.data.plan); setFullName(p.data.full_name); }
       const rows = r.data ?? [];
       setStats({
         count: rows.length,
@@ -36,7 +38,15 @@ export function Dashboard() {
   return (
     <main className="container">
       <div className="page-head">
-        <h1>Hi, {session?.user.email}</h1>
+        <div>
+          <h1>{timeGreeting()}, {displayName(session, fullName)} 👋</h1>
+          <p className="muted subtitle">
+            {stats == null ? "\u00a0"
+              : stats.needsReview > 0 ? "A few receipts are waiting for a quick check."
+              : stats.count > 0 ? "You're all caught up. Nice work!"
+              : "Let's get your first receipt in."}
+          </p>
+        </div>
         <Link to="/app/upload" className="btn">📸 Add receipt</Link>
       </div>
 

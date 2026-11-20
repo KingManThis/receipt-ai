@@ -121,3 +121,5 @@ select, textarea {
 .scanned { margin: 0 0 1rem; font-size: .9rem; }
 .scanned summary { cursor: pointer; color: var(--muted); }
 .scanned pre { white-space: pre-wrap; max-height: 260px; overflow: auto; background: var(--bg); padding: .75rem; border-radius: 8px; font-size: .8rem; }
+.hero-actions { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
+.subtitle { margin: .25rem 0 0; }
