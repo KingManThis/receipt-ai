@@ -22,7 +22,13 @@ vendor, date, amount and IRS Schedule C category, and export a tax-ready report.
 3. **Authentication → URL Configuration**:
    - Site URL: `https://<your-github-username>.github.io/receipt-ai/`
    - Redirect URLs: add the same URL, plus `http://localhost:5173/` for local development.
-4. Optional: **Authentication → Providers → Google** to enable Google sign-in.
+4. Optional, Google sign-in (the button appears automatically once this is on):
+   1. console.cloud.google.com → new project → **Google Auth Platform** → Get started (External audience).
+   2. **Clients → Create client → Web application**.
+      Authorized JavaScript origins: `https://<your-github-username>.github.io`.
+      Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`.
+   3. Copy the Client ID and Client secret into Supabase **Authentication → Sign In / Providers → Google**, enable, save.
+   4. While the Google app is in Testing, add yourself under **Audience → Test users**; **Publish app** for everyone.
 5. **Project Settings → API**: copy the **Project URL** and the **anon public** key.
 
 ### 2. GitHub

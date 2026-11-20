@@ -23,3 +23,16 @@ export const supabase = createClient(
 export function appUrl(): string {
   return window.location.origin + import.meta.env.BASE_URL;
 }
+
+/** Which sign-in providers are switched on in Supabase (e.g. Google), so the UI only offers working ones. */
+export async function enabledProviders(): Promise<Record<string, boolean>> {
+  if (!supabaseConfigured) return {};
+  try {
+    const res = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: anonKey! } });
+    if (!res.ok) return {};
+    const body = (await res.json()) as { external?: Record<string, boolean> };
+    return body.external ?? {};
+  } catch {
+    return {};
+  }
+}

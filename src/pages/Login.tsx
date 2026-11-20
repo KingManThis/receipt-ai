@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { appUrl, supabase, supabaseConfigured } from "../lib/supabase";
+import { appUrl, enabledProviders, supabase, supabaseConfigured } from "../lib/supabase";
 import { useAuth } from "../components/AuthProvider";
 
 type Mode = "login" | "signup" | "reset";
@@ -13,7 +13,12 @@ export function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
   const { session } = useAuth();
+
+  useEffect(() => {
+    enabledProviders().then((p) => setGoogleEnabled(Boolean(p.google)));
+  }, []);
 
   if (session) return <Navigate to="/app" replace />;
 
@@ -68,7 +73,7 @@ export function Login() {
           <p className="alert">Supabase isn't connected yet. Add the keys described in the README.</p>
         )}
 
-        {mode !== "reset" && (
+        {mode !== "reset" && googleEnabled && (
           <>
             <button className="btn outline full" onClick={google} type="button">
               Continue with Google
